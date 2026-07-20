@@ -36,13 +36,34 @@ if ($pane) {
 }
 
 # 2) Raise the terminal window. Candidates: gui pid from sock name > passed pid.
+# SetForegroundWindow alone is refused by Windows focus-steal prevention when called
+# from a toast-launched process. Force() uses the AttachThreadInput + ALT-key trick to bypass it.
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public class ToastWin {
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
-  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr pid);
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] static extern bool AttachThreadInput(uint a, uint b, bool attach);
+  [DllImport("user32.dll")] static extern bool BringWindowToTop(IntPtr h);
+  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int n);
+  [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, IntPtr extra);
+
+  public static bool Force(IntPtr hWnd) {
+    if (hWnd == IntPtr.Zero) return false;
+    uint fgThread = GetWindowThreadProcessId(GetForegroundWindow(), IntPtr.Zero);
+    uint thisThread = GetCurrentThreadId();
+    keybd_event(0x12, 0, 0, IntPtr.Zero);            // ALT down: unlocks foreground change
+    ShowWindow(hWnd, 9);                             // SW_RESTORE
+    AttachThreadInput(thisThread, fgThread, true);
+    BringWindowToTop(hWnd);
+    bool r = SetForegroundWindow(hWnd);
+    AttachThreadInput(thisThread, fgThread, false);
+    keybd_event(0x12, 0, 2, IntPtr.Zero);            // ALT up (KEYEVENTF_KEYUP)
+    return r;
+  }
 }
 '@
 
@@ -57,9 +78,8 @@ foreach ($cp in $candidates) {
     $proc = Get-Process -Id $cp -ErrorAction Stop
     $h = $proc.MainWindowHandle
     if ($h -ne [IntPtr]::Zero) {
-      if ([ToastWin]::IsIconic($h)) { [ToastWin]::ShowWindow($h, 9) | Out-Null }  # SW_RESTORE
-      $r = [ToastWin]::SetForegroundWindow($h)
-      Log "  focus pid=$cp ($($proc.ProcessName)) hwnd=$h setForeground=$r"
+      $r = [ToastWin]::Force($h)
+      Log "  focus pid=$cp ($($proc.ProcessName)) hwnd=$h force=$r"
       $focused = $true; break
     } else { Log "  pid=$cp ($($proc.ProcessName)) has no MainWindowHandle" }
   } catch { Log "  pid=$cp not running" }
