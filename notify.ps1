@@ -49,24 +49,6 @@ function Get-TurnStatus($path) {
   return "ok"
 }
 
-# Terminal window PID: walk up the parent process chain to the first ancestor with a visible window.
-# Used as the click target so tapping the toast focuses that terminal.
-function Get-TerminalPid {
-  $cur = $PID
-  for ($i = 0; $i -lt 12; $i++) {
-    $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$cur" -ErrorAction SilentlyContinue
-    if (-not $proc) { break }
-    $parent = $proc.ParentProcessId
-    if (-not $parent -or $parent -eq 0) { break }
-    try {
-      $pobj = Get-Process -Id $parent -ErrorAction Stop
-      if ($pobj.MainWindowHandle -ne 0) { return $parent }
-    } catch {}
-    $cur = $parent
-  }
-  return $null
-}
-
 # Pick emoji / body / sound per situation (title = session name, set below)
 switch ($Event) {
   "Stop" {
@@ -146,30 +128,6 @@ if (Test-Path $icon) {
 $audio = $doc.CreateElement("audio")
 $audio.SetAttribute("src", $sound)
 $doc.DocumentElement.AppendChild($audio) | Out-Null
-
-# Click / buttons: focus this session. On WezTerm we focus the exact pane, else the terminal window.
-# (protocol activation — no COM activator needed)
-$termPid = Get-TerminalPid
-if ($termPid) {
-  $focusArgs = "claude-code-toast:focus?pid=$termPid"
-  if ($env:WEZTERM_PANE) {
-    $focusArgs += "&pane=$($env:WEZTERM_PANE)"
-    # Pass the gui socket so the (env-less) click handler can reach THIS wezterm instead of spawning a new one
-    if ($env:WEZTERM_UNIX_SOCKET) { $focusArgs += "&sock=" + [uri]::EscapeDataString($env:WEZTERM_UNIX_SOCKET) }
-  }
-  $doc.DocumentElement.SetAttribute("launch", $focusArgs)
-  $doc.DocumentElement.SetAttribute("activationType", "protocol")
-
-  # Action buttons (canonical toast order: visual, audio, actions)
-  $actions = $doc.CreateElement("actions")
-  $open = $doc.CreateElement("action")
-  $open.SetAttribute("content", "🖥 열기"); $open.SetAttribute("arguments", $focusArgs); $open.SetAttribute("activationType", "protocol")
-  $actions.AppendChild($open) | Out-Null
-  $dismiss = $doc.CreateElement("action")
-  $dismiss.SetAttribute("content", "무시"); $dismiss.SetAttribute("arguments", "dismiss"); $dismiss.SetAttribute("activationType", "system")
-  $actions.AppendChild($dismiss) | Out-Null
-  $doc.DocumentElement.AppendChild($actions) | Out-Null
-}
 
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Claude Code").Show($toast)
