@@ -8,7 +8,7 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
 
 - `Stop` 훅 → ✅ 완료 / ❌ 에러 / ⏹️ 중단 토스트 (마지막 assistant 메시지 요약을 본문에)
 - `Notification` 훅 → 🔐 권한 / ⏳ 입력 대기 토스트
-- 에이전트/백그라운드 → 🤖 `SubagentStop` · 📦 `TaskCompleted` · ❌ `StopFailure` · 🔐 `PermissionRequest` · 💤 `TeammateIdle`
+- 실패/권한/대기 → ❌ `StopFailure` · 🔐 `PermissionRequest` · 💤 `TeammateIdle`
 - 토스트 제목 = 세션 이름, 하단 = 📁 작업 폴더, 앱 로고 = Claude 아이콘
 - **토스트 클릭 → 해당 세션 터미널 창으로 포커스** (`claude-code-toast:` 프로토콜)
 - Claude Code 자체 desktop 알림(이름 없는 "작업이 완료되었어요")은 꺼서 중복 제거
