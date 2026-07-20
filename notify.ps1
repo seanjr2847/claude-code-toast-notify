@@ -152,7 +152,11 @@ $doc.DocumentElement.AppendChild($audio) | Out-Null
 $termPid = Get-TerminalPid
 if ($termPid) {
   $focusArgs = "claude-code-toast:focus?pid=$termPid"
-  if ($env:WEZTERM_PANE) { $focusArgs += "&pane=$($env:WEZTERM_PANE)" }
+  if ($env:WEZTERM_PANE) {
+    $focusArgs += "&pane=$($env:WEZTERM_PANE)"
+    # Pass the gui socket so the (env-less) click handler can reach THIS wezterm instead of spawning a new one
+    if ($env:WEZTERM_UNIX_SOCKET) { $focusArgs += "&sock=" + [uri]::EscapeDataString($env:WEZTERM_UNIX_SOCKET) }
+  }
   $doc.DocumentElement.SetAttribute("launch", $focusArgs)
   $doc.DocumentElement.SetAttribute("activationType", "protocol")
 

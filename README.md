@@ -27,7 +27,8 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
 토스트를 클릭하거나 **[🖥 열기]** 버튼을 누르면 그 세션으로 포커스됩니다. **[무시]** 버튼으로 닫을 수도 있습니다.
 
 - `notify.ps1`이 부모 프로세스 체인을 거슬러 터미널 창 PID를 찾고, WezTerm이면 `$env:WEZTERM_PANE`(세션 페인 ID)도 함께 토스트에 심습니다.
-- 클릭 시 `toast-activate.ps1`이 **WezTerm에선 `wezterm cli activate-pane`로 정확한 페인**을, 그 외엔 `SetForegroundWindow`로 터미널 창을 포커스합니다.
+- WezTerm이면 GUI 소켓(`WEZTERM_UNIX_SOCKET`)도 URI에 실어, 환경변수 없는 클릭 핸들러가 **실행 중인 그 wezterm에 붙어** `wezterm cli activate-pane`로 정확한 페인을 포커스합니다(새 창 안 뜸). 그 외엔 `SetForegroundWindow`로 터미널 창을 포커스.
+- 핸들러는 `toast-activate.vbs`(wscript)로 **콘솔 창 없이** 실행됩니다.
 - COM activator 없이 URI 프로토콜 activation만 사용 — PowerShell 생성 토스트에서 동작하는 방식.
 
 ## 설치

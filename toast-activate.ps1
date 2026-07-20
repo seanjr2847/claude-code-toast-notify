@@ -11,9 +11,13 @@ $targetPid = 0
 if ($uri -match 'pid=(\d+)') { $targetPid = [int]$matches[1] }
 $pane = $null
 if ($uri -match 'pane=(\d+)') { $pane = $matches[1] }
+$sock = $null
+if ($uri -match 'sock=([^&]+)') { $sock = [uri]::UnescapeDataString($matches[1]) }
 
 # WezTerm 페인 단위 포커스 (창 안에서 정확한 세션 탭/페인 선택)
+# sock을 세팅해야 실행 중인 GUI에 붙음 — 없으면 새 창이 뜨거나 연결 실패
 if ($pane) {
+  if ($sock) { $env:WEZTERM_UNIX_SOCKET = $sock }
   try { wezterm cli activate-pane --pane-id $pane 2>$null } catch {}
 }
 

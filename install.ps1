@@ -13,9 +13,10 @@ if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | 
 
 # 1) 파일 복사
 Copy-Item (Join-Path $src "notify.ps1")         (Join-Path $dest "notify.ps1")         -Force
-Copy-Item (Join-Path $src "toast-activate.ps1") (Join-Path $dest "toast-activate.ps1") -Force
-Copy-Item (Join-Path $src "claude-icon.png")    (Join-Path $dest "claude-icon.png")    -Force
-Write-Host "[1/4] notify.ps1 + toast-activate.ps1 + claude-icon.png -> $dest" -ForegroundColor Green
+Copy-Item (Join-Path $src "toast-activate.ps1")  (Join-Path $dest "toast-activate.ps1")  -Force
+Copy-Item (Join-Path $src "toast-activate.vbs")  (Join-Path $dest "toast-activate.vbs")  -Force
+Copy-Item (Join-Path $src "claude-icon.png")     (Join-Path $dest "claude-icon.png")     -Force
+Write-Host "[1/4] notify.ps1 + toast-activate.ps1/.vbs + claude-icon.png -> $dest" -ForegroundColor Green
 
 # 2) AUMID 등록
 $key = "HKCU:\Software\Classes\AppUserModelId\Claude Code"
@@ -32,8 +33,8 @@ Set-Item $proto -Value "URL:Claude Code Toast"
 New-ItemProperty $proto -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null
 $cmdkey = "$proto\shell\open\command"
 New-Item $cmdkey -Force | Out-Null
-$activate = Join-Path $dest "toast-activate.ps1"
-Set-Item $cmdkey -Value ("powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$activate`" `"%1`"")
+$vbs = Join-Path $dest "toast-activate.vbs"
+Set-Item $cmdkey -Value ("wscript.exe `"$vbs`" `"%1`"")   # 콘솔 창 없이 실행
 Write-Host "[3/4] claude-code-toast 프로토콜 등록 (토스트 클릭 → 터미널 포커스)" -ForegroundColor Green
 
 # 4) settings.json 병합
