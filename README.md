@@ -10,6 +10,7 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
 - `Notification` 훅 → 🔐 권한 / ⏳ 입력 대기 토스트
 - 실패/권한/대기 → ❌ `StopFailure` · 🔐 `PermissionRequest` · 💤 `TeammateIdle`
 - 토스트 제목 = 세션 이름, 하단 = 📁 작업 폴더, 앱 로고 = Claude 아이콘
+- 버튼: **[🖥 열기]** = 세션의 터미널 창 포커스 · **[다시 알림]** = 드롭다운에서 5분/30분/1시간 스누즈
 - Claude Code 자체 desktop 알림(이름 없는 "작업이 완료되었어요")은 꺼서 중복 제거
 
 ### 상태 감지 (❌ / ⏹️)
@@ -20,6 +21,12 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
 - 그 외 → ✅ 완료
 
 (꼬리 25줄만 보는 휴리스틱이라 더 앞쪽 에러는 놓칠 수 있음.)
+
+### 버튼
+
+- **[🖥 열기]** — 세션을 소유한 터미널 창을 앞으로 가져옵니다. WezTerm이면 `WEZTERM_PANE`+GUI 소켓을 토스트에 실어 `wezterm cli activate-pane`로 그 페인을 포커스하고, 그 외엔 창 단위 포커스(`SetForegroundWindow` + AttachThreadInput 우회). 핸들러는 `toast-activate.vbs`(wscript)로 콘솔 창 없이 실행됩니다.
+  - **한계**: Claude 에이전트 팀처럼 한 페인 안에서 여러 세션이 도는 in-process 구성은, 그 페인(=Claude 창)까지만 포커스되고 특정 팀원 세션 개별 지목은 불가합니다(Claude Code가 외부 포커스 API를 제공하지 않음).
+- **[다시 알림]** — 드롭다운(5분/30분/1시간)에서 고른 시간 뒤 같은 토스트를 다시 띄우는 Windows 네이티브 스누즈.
 
 ## 설치
 
@@ -35,9 +42,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 
 `install.ps1`이 하는 일 (idempotent, 여러 번 실행 안전):
 
-1. `notify.ps1` + `claude-icon.png` → `~/.claude/` 복사
+1. `notify.ps1` + `toast-activate.ps1/.vbs` + `claude-icon.png` → `~/.claude/` 복사
 2. **AUMID `Claude Code` 레지스트리 등록** — Windows 11에서 이게 없으면 토스트가 에러 없이 조용히 안 뜹니다 (파일 복사로는 안 넘어오는 부분)
-3. `~/.claude/settings.json`에 알림 훅 + `preferredNotifChannel: notifications_disabled` 병합 (기존 설정은 보존, 수정 전 `settings.json.bak` 백업)
+3. **`claude-code-toast:` 프로토콜 등록** — [열기] 버튼이 창을 포커스하는 데 사용
+4. `~/.claude/settings.json`에 알림 훅 + `preferredNotifChannel: notifications_disabled` 병합 (기존 설정은 보존, 수정 전 `settings.json.bak` 백업)
 
 ## 요구 사항
 
@@ -60,4 +68,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 
 ## 커스터마이즈
 
-`notify.ps1`의 세션 이름 우선순위는 `Get-SessionName`에서: rename 이름(`customTitle`) → 자동 제목(`aiTitle`) → 폴더명. 이모지/문구는 `switch ($Event)` 블록에서 수정.
+`notify.ps1`의 세션 이름 우선순위는 `Get-SessionName`에서: rename 이름(`customTitle`) → 자동 제목(`aiTitle`) → 폴더명. 이모지/문구는 `switch ($Event)` 블록에서, 스누즈 시간은 `snoozeTime` selection에서 수정.

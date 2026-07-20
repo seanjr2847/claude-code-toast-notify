@@ -49,6 +49,23 @@ function Get-TurnStatus($path) {
   return "ok"
 }
 
+# Terminal window PID: walk up the parent chain to the first ancestor with a visible window.
+function Get-TerminalPid {
+  $cur = $PID
+  for ($i = 0; $i -lt 12; $i++) {
+    $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$cur" -ErrorAction SilentlyContinue
+    if (-not $proc) { break }
+    $parent = $proc.ParentProcessId
+    if (-not $parent -or $parent -eq 0) { break }
+    try {
+      $pobj = Get-Process -Id $parent -ErrorAction Stop
+      if ($pobj.MainWindowHandle -ne 0) { return $parent }
+    } catch {}
+    $cur = $parent
+  }
+  return $null
+}
+
 # Pick emoji / body / sound per situation (title = session name, set below)
 switch ($Event) {
   "Stop" {
@@ -128,6 +145,41 @@ if (Test-Path $icon) {
 $audio = $doc.CreateElement("audio")
 $audio.SetAttribute("src", $sound)
 $doc.DocumentElement.AppendChild($audio) | Out-Null
+
+# Buttons: [열기] focuses the terminal window (via claude-code-toast: protocol handler),
+# [다시 알림] snoozes with a duration picked from the dropdown (id = minutes, native snooze).
+$termPid = Get-TerminalPid
+if ($termPid) {
+  $focusArgs = "claude-code-toast:focus?pid=$termPid"
+  if ($env:WEZTERM_PANE) {
+    $focusArgs += "&pane=$($env:WEZTERM_PANE)"
+    if ($env:WEZTERM_UNIX_SOCKET) { $focusArgs += "&sock=" + [uri]::EscapeDataString($env:WEZTERM_UNIX_SOCKET) }
+  }
+  $doc.DocumentElement.SetAttribute("launch", $focusArgs)
+  $doc.DocumentElement.SetAttribute("activationType", "protocol")
+
+  $actions = $doc.CreateElement("actions")
+
+  # Snooze duration dropdown (selection id = minutes)
+  $input = $doc.CreateElement("input")
+  $input.SetAttribute("id", "snoozeTime"); $input.SetAttribute("type", "selection"); $input.SetAttribute("defaultInput", "5")
+  foreach ($opt in @(@("5", "5분 뒤 다시"), @("30", "30분 뒤 다시"), @("60", "1시간 뒤 다시"))) {
+    $sel = $doc.CreateElement("selection")
+    $sel.SetAttribute("id", $opt[0]); $sel.SetAttribute("content", $opt[1])
+    $input.AppendChild($sel) | Out-Null
+  }
+  $actions.AppendChild($input) | Out-Null
+
+  $open = $doc.CreateElement("action")
+  $open.SetAttribute("content", "🖥 열기"); $open.SetAttribute("arguments", $focusArgs); $open.SetAttribute("activationType", "protocol")
+  $actions.AppendChild($open) | Out-Null
+
+  $snooze = $doc.CreateElement("action")
+  $snooze.SetAttribute("content", "다시 알림"); $snooze.SetAttribute("arguments", "snooze"); $snooze.SetAttribute("hint-inputId", "snoozeTime"); $snooze.SetAttribute("activationType", "system")
+  $actions.AppendChild($snooze) | Out-Null
+
+  $doc.DocumentElement.AppendChild($actions) | Out-Null
+}
 
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Claude Code").Show($toast)
