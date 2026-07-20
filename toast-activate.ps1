@@ -1,12 +1,22 @@
 <#
-  토스트 클릭 시 실행되는 핸들러 (claude-code-toast: 프로토콜).
-  인자로 받은 URI에서 pid를 뽑아 그 프로세스의 메인 창을 포커스한다.
-  예: claude-code-toast:focus?pid=1234
+  토스트 클릭/버튼 시 실행되는 핸들러 (claude-code-toast: 프로토콜).
+  URI에서 pid + (선택)pane 을 뽑아 해당 세션으로 포커스한다.
+  예: claude-code-toast:focus?pid=1234&pane=7
+  - pane 있으면(WezTerm) 그 페인을 정확히 activate
+  - pid 로 터미널 창을 OS foreground 로 끌어올림
 #>
 param([string]$uri)
 
 $targetPid = 0
 if ($uri -match 'pid=(\d+)') { $targetPid = [int]$matches[1] }
+$pane = $null
+if ($uri -match 'pane=(\d+)') { $pane = $matches[1] }
+
+# WezTerm 페인 단위 포커스 (창 안에서 정확한 세션 탭/페인 선택)
+if ($pane) {
+  try { wezterm cli activate-pane --pane-id $pane 2>$null } catch {}
+}
+
 if ($targetPid -le 0) { return }
 
 Add-Type @'

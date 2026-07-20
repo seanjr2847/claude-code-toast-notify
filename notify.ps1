@@ -147,11 +147,24 @@ $audio = $doc.CreateElement("audio")
 $audio.SetAttribute("src", $sound)
 $doc.DocumentElement.AppendChild($audio) | Out-Null
 
-# Click target: focus the terminal that owns this session (protocol activation, no COM activator needed)
+# Click / buttons: focus this session. On WezTerm we focus the exact pane, else the terminal window.
+# (protocol activation — no COM activator needed)
 $termPid = Get-TerminalPid
 if ($termPid) {
-  $doc.DocumentElement.SetAttribute("launch", "claude-code-toast:focus?pid=$termPid")
+  $focusArgs = "claude-code-toast:focus?pid=$termPid"
+  if ($env:WEZTERM_PANE) { $focusArgs += "&pane=$($env:WEZTERM_PANE)" }
+  $doc.DocumentElement.SetAttribute("launch", $focusArgs)
   $doc.DocumentElement.SetAttribute("activationType", "protocol")
+
+  # Action buttons (canonical toast order: visual, audio, actions)
+  $actions = $doc.CreateElement("actions")
+  $open = $doc.CreateElement("action")
+  $open.SetAttribute("content", "🖥 열기"); $open.SetAttribute("arguments", $focusArgs); $open.SetAttribute("activationType", "protocol")
+  $actions.AppendChild($open) | Out-Null
+  $dismiss = $doc.CreateElement("action")
+  $dismiss.SetAttribute("content", "무시"); $dismiss.SetAttribute("arguments", "dismiss"); $dismiss.SetAttribute("activationType", "system")
+  $actions.AppendChild($dismiss) | Out-Null
+  $doc.DocumentElement.AppendChild($actions) | Out-Null
 }
 
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)

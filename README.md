@@ -10,7 +10,7 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
 - `Notification` 훅 → 🔐 권한 / ⏳ 입력 대기 토스트
 - 실패/권한/대기 → ❌ `StopFailure` · 🔐 `PermissionRequest` · 💤 `TeammateIdle`
 - 토스트 제목 = 세션 이름, 하단 = 📁 작업 폴더, 앱 로고 = Claude 아이콘
-- **토스트 클릭 → 해당 세션 터미널 창으로 포커스** (`claude-code-toast:` 프로토콜)
+- **토스트 클릭/[🖥 열기] 버튼 → 해당 세션으로 포커스**, [무시] 버튼으로 닫기 (`claude-code-toast:` 프로토콜)
 - Claude Code 자체 desktop 알림(이름 없는 "작업이 완료되었어요")은 꺼서 중복 제거
 
 ### 상태 감지 (❌ / ⏹️)
@@ -22,9 +22,13 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
 
 (꼬리 25줄만 보는 휴리스틱이라 더 앞쪽 에러는 놓칠 수 있음.)
 
-### 클릭 → 창 포커스
+### 클릭/버튼 → 세션 포커스
 
-토스트를 클릭하면 세션을 소유한 터미널 창이 앞으로 나옵니다. `notify.ps1`이 부모 프로세스 체인을 거슬러 창을 가진 터미널의 PID를 찾아 토스트에 심고, 클릭 시 `toast-activate.ps1`이 그 창을 `SetForegroundWindow`로 올립니다. COM activator 없이 URI 프로토콜 activation만 사용 — PowerShell 생성 토스트에서 동작하는 방식.
+토스트를 클릭하거나 **[🖥 열기]** 버튼을 누르면 그 세션으로 포커스됩니다. **[무시]** 버튼으로 닫을 수도 있습니다.
+
+- `notify.ps1`이 부모 프로세스 체인을 거슬러 터미널 창 PID를 찾고, WezTerm이면 `$env:WEZTERM_PANE`(세션 페인 ID)도 함께 토스트에 심습니다.
+- 클릭 시 `toast-activate.ps1`이 **WezTerm에선 `wezterm cli activate-pane`로 정확한 페인**을, 그 외엔 `SetForegroundWindow`로 터미널 창을 포커스합니다.
+- COM activator 없이 URI 프로토콜 activation만 사용 — PowerShell 생성 토스트에서 동작하는 방식.
 
 ## 설치
 
