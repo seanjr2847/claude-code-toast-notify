@@ -28,7 +28,20 @@ Claude Code(Windows)에서 **작업 완료 / 입력 대기 / 권한 요청** 시
   - **한계**: Claude 에이전트 팀처럼 한 페인 안에서 여러 세션이 도는 in-process 구성은, 그 페인(=Claude 창)까지만 포커스되고 특정 팀원 세션 개별 지목은 불가합니다(Claude Code가 외부 포커스 API를 제공하지 않음).
 - **[다시 알림]** — 드롭다운(5분/30분/1시간)에서 고른 시간 뒤 같은 토스트를 다시 띄우는 Windows 네이티브 스누즈.
 
-## 설치
+## 설치 (플러그인 · 권장)
+
+Claude Code 안에서:
+
+```
+/plugin marketplace add seanjr2847/claude-code-toast-notify
+/plugin install toast-notify
+```
+
+그러면 훅이 플러그인에서 바로 제공되고(`settings.json` 안 건드림), 세션 시작 시 `setup.ps1`이 AUMID·프로토콜을 등록합니다. 끄려면 `/plugin` 에서 비활성화.
+
+> 플러그인과 아래 스크립트 설치를 **동시에 쓰지 마세요** — 알림이 두 번 뜹니다. 스크립트로 이미 깔았다면 `uninstall.ps1` 먼저 실행.
+
+## 설치 (스크립트 · 폴백)
 
 PowerShell에서:
 

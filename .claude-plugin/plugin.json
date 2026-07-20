@@ -1,0 +1,26 @@
+{
+  "name": "toast-notify",
+  "description": "Claude Code 완료/입력/권한 알림을 세션 이름과 함께 Windows 토스트로 표시. [열기]로 터미널 포커스, [다시 알림] 스누즈.",
+  "version": "1.0.0",
+  "author": { "name": "seanjr2847", "url": "https://github.com/seanjr2847" },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/setup.ps1\"", "async": true, "statusMessage": "토스트 알림 설정 확인" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/notify.ps1\" -Event Notification" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/notify.ps1\" -Event Stop" } ] }
+    ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/notify.ps1\" -Event StopFailure" } ] }
+    ],
+    "PermissionRequest": [
+      { "hooks": [ { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/notify.ps1\" -Event PermissionRequest" } ] }
+    ],
+    "TeammateIdle": [
+      { "hooks": [ { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/notify.ps1\" -Event TeammateIdle" } ] }
+    ]
+  }
+}

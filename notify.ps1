@@ -132,8 +132,8 @@ if ($proj) {
   $binding.AppendChild($attr) | Out-Null
 }
 
-# App logo (Claude sunburst), cropped to a circle
-$icon = "$env:USERPROFILE\.claude\claude-icon.png"
+# App logo (Claude sunburst), cropped to a circle — next to this script (plugin root or ~/.claude)
+$icon = Join-Path $PSScriptRoot "claude-icon.png"
 if (Test-Path $icon) {
   $img = $doc.CreateElement("image")
   $img.SetAttribute("placement", "appLogoOverride")
