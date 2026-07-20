@@ -69,3 +69,41 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ## 커스터마이즈
 
 `notify.ps1`의 세션 이름 우선순위는 `Get-SessionName`에서: rename 이름(`customTitle`) → 자동 제목(`aiTitle`) → 폴더명. 이모지/문구는 `switch ($Event)` 블록에서, 스누즈 시간은 `snoozeTime` selection에서 수정.
+
+## 기존 설정을 해치지 않음 (non-destructive)
+
+`install.ps1`은 남의 `settings.json`을 덮어쓰지 않습니다:
+- 알림 훅은 **해당 이벤트 훅이 없을 때만** 추가 (이미 자기 훅이 있으면 그대로 둠)
+- `preferredNotifChannel`은 **값이 없을 때만** `notifications_disabled` 설정 (이미 값이 있으면 그 값 유지)
+- 나머지 키(`model`, `permissions`, `env` 등)는 전부 보존, 수정 전 `settings.json.bak` 백업
+- `settings.json`이 깨져 파싱 안 되면 **손대지 않고** 건너뜀
+
+## 제거
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\uninstall.ps1
+```
+
+`notify.ps1`을 가리키는 알림 훅만 제거하고, 파일·AUMID·프로토콜을 정리합니다. 다른 훅/설정은 보존합니다. (`preferredNotifChannel`은 우리가 설정했는지 확신할 수 없어 보존 — 원치 않으면 직접 지우세요.)
+
+## 다른 사람에게 배포할 때
+
+1. 리포를 clone 또는 zip으로 전달 (또는 이 리포를 fork)
+2. 받는 사람은 PowerShell에서 `install.ps1` 한 번 실행 → 세션 재시작
+3. Windows 10/11 전용. 관리자 권한 불필요(전부 HKCU + 사용자 프로필)
+
+**언어**: 토스트 문구가 한국어입니다(`notify.ps1`의 `switch ($Event)` 블록). 영어권에 배포하려면 그 블록의 문자열만 바꾸면 됩니다.
+
+## 수동 설정 (install.ps1이 settings.json을 못 건드릴 때)
+
+`~/.claude/settings.json`에 아래를 직접 병합하세요(경로의 `<USER>`는 본인 계정으로):
+
+```json
+{
+  "preferredNotifChannel": "notifications_disabled",
+  "hooks": {
+    "Stop":          [{ "matcher": "", "hooks": [{ "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\.claude\notify.ps1\" -Event Stop" }] }],
+    "Notification":  [{ "matcher": "", "hooks": [{ "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\.claude\notify.ps1\" -Event Notification" }] }]
+  }
+}
+```
