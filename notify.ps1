@@ -35,13 +35,48 @@ function Get-SessionName($path) {
   if ($ct) { return $ct } elseif ($at) { return $at } else { return $null }
 }
 
+# Turn outcome: error / interrupted / ok. Heuristic string scan of the tail.
+# ponytail: scans last 25 lines only; an error further back is missed (upgrade: parse full turn)
+function Get-TurnStatus($path) {
+  if (-not $path -or -not (Test-Path $path)) { return "ok" }
+  $lines = Get-Content $path -Tail 25 -Encoding UTF8
+  for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+    $l = $lines[$i]
+    if ($l -match '\[Request interrupted') { return "interrupted" }
+    if ($l -match '"isApiErrorMessage"\s*:\s*true') { return "error" }
+    if ($l -match '"is_error"\s*:\s*true')          { return "error" }
+  }
+  return "ok"
+}
+
+# Terminal window PID: walk up the parent process chain to the first ancestor with a visible window.
+# Used as the click target so tapping the toast focuses that terminal.
+function Get-TerminalPid {
+  $cur = $PID
+  for ($i = 0; $i -lt 12; $i++) {
+    $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$cur" -ErrorAction SilentlyContinue
+    if (-not $proc) { break }
+    $parent = $proc.ParentProcessId
+    if (-not $parent -or $parent -eq 0) { break }
+    try {
+      $pobj = Get-Process -Id $parent -ErrorAction Stop
+      if ($pobj.MainWindowHandle -ne 0) { return $parent }
+    } catch {}
+    $cur = $parent
+  }
+  return $null
+}
+
 # Pick emoji / body / sound per situation (title = session name, set below)
 switch ($Event) {
   "Stop" {
     $recap = Get-Recap $data.transcript_path
-    $emoji = "✅"
-    $body  = if ($recap) { $recap } else { "작업을 마쳤어요." }
-    $sound = "ms-winsoundevent:Notification.Default"
+    switch (Get-TurnStatus $data.transcript_path) {
+      "error"       { $emoji = "❌"; $sound = "ms-winsoundevent:Notification.Reminder"; $fallback = "에러로 중단됐어요." }
+      "interrupted" { $emoji = "⏹️"; $sound = "ms-winsoundevent:Notification.IM";       $fallback = "사용자가 중단했어요." }
+      default       { $emoji = "✅"; $sound = "ms-winsoundevent:Notification.Default";  $fallback = "작업을 마쳤어요." }
+    }
+    $body = if ($recap) { $recap } else { $fallback }
   }
   default {
     if ($msg -match "permission|approve|allow") {
@@ -96,5 +131,13 @@ if (Test-Path $icon) {
 $audio = $doc.CreateElement("audio")
 $audio.SetAttribute("src", $sound)
 $doc.DocumentElement.AppendChild($audio) | Out-Null
+
+# Click target: focus the terminal that owns this session (protocol activation, no COM activator needed)
+$termPid = Get-TerminalPid
+if ($termPid) {
+  $doc.DocumentElement.SetAttribute("launch", "claude-code-toast:focus?pid=$termPid")
+  $doc.DocumentElement.SetAttribute("activationType", "protocol")
+}
+
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Claude Code").Show($toast)
