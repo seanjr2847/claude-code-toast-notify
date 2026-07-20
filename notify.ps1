@@ -78,6 +78,32 @@ switch ($Event) {
     }
     $body = if ($recap) { $recap } else { $fallback }
   }
+  "StopFailure" {
+    $emoji = "❌"
+    $body  = if ($msg) { $msg } else { "턴이 실패로 끝났어요." }
+    $sound = "ms-winsoundevent:Notification.Reminder"
+  }
+  "SubagentStop" {
+    $recap = Get-Recap $data.transcript_path
+    $emoji = "🤖"
+    $body  = if ($recap) { $recap } else { "에이전트가 작업을 마쳤어요." }
+    $sound = "ms-winsoundevent:Notification.Default"
+  }
+  "TaskCompleted" {
+    $emoji = "📦"
+    $body  = if ($msg) { $msg } else { "백그라운드 작업이 완료됐어요." }
+    $sound = "ms-winsoundevent:Notification.Default"
+  }
+  "PermissionRequest" {
+    $emoji = "🔐"
+    $body  = if ($msg) { $msg } else { "권한 승인을 기다리는 중이에요." }
+    $sound = "ms-winsoundevent:Notification.Reminder"
+  }
+  "TeammateIdle" {
+    $emoji = "💤"
+    $body  = "팀 에이전트가 대기 중이에요."
+    $sound = "ms-winsoundevent:Notification.IM"
+  }
   default {
     if ($msg -match "permission|approve|allow") {
       $emoji = "🔐"

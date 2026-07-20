@@ -50,7 +50,8 @@ if (Test-Path $settingsPath) {
   $s = [pscustomobject]@{}
 }
 if (-not $s.PSObject.Properties['hooks']) { $s | Add-Member hooks ([pscustomobject]@{}) -Force }
-foreach ($ev in "Notification","Stop") {
+$events = "Notification","Stop","StopFailure","SubagentStop","TaskCompleted","PermissionRequest","TeammateIdle"
+foreach ($ev in $events) {
   if (-not $s.hooks.PSObject.Properties[$ev]) {
     $s.hooks | Add-Member $ev @(New-Hook $ev) -Force
   }
