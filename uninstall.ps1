@@ -22,7 +22,7 @@ Write-Host "[2/3] AUMID + 프로토콜 레지스트리 제거" -ForegroundColor 
 $settingsPath = Join-Path $dest "settings.json"
 if (Test-Path $settingsPath) {
   try {
-    $s = Get-Content $settingsPath -Raw | ConvertFrom-Json
+    $s = Get-Content $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
     Copy-Item $settingsPath "$settingsPath.bak" -Force
     if ($s.PSObject.Properties['hooks']) {
       foreach ($ev in "Notification","Stop","StopFailure","PermissionRequest","TeammateIdle") {

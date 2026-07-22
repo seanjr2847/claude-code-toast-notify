@@ -48,7 +48,7 @@ function New-Hook($event) {
 
 if (Test-Path $settingsPath) {
   try {
-    $s = Get-Content $settingsPath -Raw | ConvertFrom-Json
+    $s = Get-Content $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
   } catch {
     Write-Host "[4/4] settings.json 을 파싱하지 못해 건드리지 않았습니다." -ForegroundColor Yellow
     Write-Host "      README의 '수동 설정' 블록을 직접 추가하세요." -ForegroundColor Yellow

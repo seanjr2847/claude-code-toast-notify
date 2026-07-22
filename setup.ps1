@@ -28,7 +28,7 @@ Set-Item $cmdkey -Value ("wscript.exe `"$vbs`" `"%1`"")
 $sp = Join-Path $env:USERPROFILE ".claude\settings.json"
 if (Test-Path $sp) {
   try {
-    $s = Get-Content $sp -Raw | ConvertFrom-Json
+    $s = Get-Content $sp -Raw -Encoding UTF8 | ConvertFrom-Json
     if (-not $s.PSObject.Properties['preferredNotifChannel']) {
       $s | Add-Member preferredNotifChannel "notifications_disabled" -Force
       ($s | ConvertTo-Json -Depth 100) | Set-Content $sp -Encoding UTF8
