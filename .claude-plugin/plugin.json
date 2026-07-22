@@ -1,7 +1,7 @@
 {
   "name": "toast-notify",
   "description": "Claude Code 완료/입력/권한 알림을 세션 이름과 함께 Windows 토스트로 표시. [열기]로 터미널 포커스, [다시 알림] 스누즈.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": { "name": "seanjr2847", "url": "https://github.com/seanjr2847" },
   "hooks": {
     "SessionStart": [
