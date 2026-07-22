@@ -105,10 +105,11 @@ switch ($Event) {
   }
 }
 
-# Title = session name (rename > ai title) > folder; emoji = status
+# Title = [project folder] + session name (rename > ai title); emoji = status
+$proj = if ($data.cwd) { Split-Path $data.cwd -Leaf } else { "" }
 $sess = Get-SessionName $data.transcript_path
-if (-not $sess) { $sess = if ($data.cwd) { Split-Path $data.cwd -Leaf } else { "Claude Code" } }
-$title = "$emoji $sess"
+if (-not $sess) { $sess = if ($proj) { $proj } else { "Claude Code" } }
+$title = if ($proj -and $sess -ne $proj) { "$emoji [$proj] $sess" } else { "$emoji $sess" }
 
 # Trim body to a toast-friendly length
 if ($body.Length -gt 180) { $body = $body.Substring(0, 180).TrimEnd() + "…" }
@@ -122,15 +123,6 @@ $texts.Item(1).AppendChild($doc.CreateTextNode($body)) | Out-Null
 # Upgrade to generic template so attribution + logo render nicely
 $binding = $doc.GetElementsByTagName("binding").Item(0)
 $binding.SetAttribute("template", "ToastGeneric")
-
-# Attribution (bottom): working-dir folder, since session name is now the title
-$proj = if ($data.cwd) { Split-Path $data.cwd -Leaf } else { "" }
-if ($proj) {
-  $attr = $doc.CreateElement("text")
-  $attr.SetAttribute("placement", "attribution")
-  $attr.AppendChild($doc.CreateTextNode("📁 " + $proj)) | Out-Null
-  $binding.AppendChild($attr) | Out-Null
-}
 
 # App logo (Claude sunburst), cropped to a circle — next to this script (plugin root or ~/.claude)
 $icon = Join-Path $PSScriptRoot "claude-icon.png"
